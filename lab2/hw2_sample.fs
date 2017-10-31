@@ -41,14 +41,13 @@ let get_substitutions2(substitutions: string list list, str: string) : string li
                     | Some(result) -> aux(substitutions', result_list@result)
     in aux(substitutions, [])
     
-let rec similar_names(substitutions, full_name) =
-    match full_name with
-        |{first = f; middle = m; last = l} ->
-            let rec aux(names : string list, result_list : Name list) =
-                match names with
-                    | [] -> result_list
-                    | name::names' -> aux(names', result_list@[{first = name; middle = m; last = l}])
-            in aux(get_substitutions2(substitutions, f), [{first = f; middle = m; last = l}])
+let rec similar_names(substitutions, full_name ) =
+    let {first = f; middle = m; last = l} = full_name
+    let rec aux(names : string list, result_list : Name list) =
+        match names with
+            | [] -> result_list
+            | name::names' -> {first = name; middle = m; last = l}::aux(names', result_list)
+    in full_name::aux(get_substitutions2(substitutions, f), [])
             
                 
 
@@ -63,29 +62,27 @@ let card_value((suit, rank) : card) =
         |Ace -> 11
         |Num(x) -> x 
         
-let rec remove_card(cs: card list, (suit, rank) : card, e) =
+let rec remove_card(cs: card list, card1 : card, e) =
     match cs with
         | [] -> raise e
-        | (s,r)::cs' -> 
-            if s = suit && r = rank
+        | card2::cs' -> 
+            if card1 = card2
             then
                 cs'
             else
-                (s,r)::remove_card(cs', (suit, rank), e)
+                card2::remove_card(cs', card1, e)
                 
-let rec all_same_color(cs) = 
+let all_same_color(cs) = 
     match cs with 
     | [] -> true
-    | c::cs ->
+    | c::cs' ->
         let colr = card_color(c)
-        let rec same_color(cs_) =
-            match cs_ with
+        let rec same_color(cs1) =
+            match cs1 with
                 | [] -> true
-                | c::cs_ -> 
-                    if card_color(c) = colr
-                    then same_color(cs_)
-                    else false
-        in same_color(cs)
+                | c::cs1' -> 
+                    card_color(c) = colr && same_color(cs1')
+        in same_color(cs')
     
 let sum_cards(cs) =
     let rec aux(cs, sum) =
@@ -100,24 +97,24 @@ let score(held_cards, goal) =
         if sum > goal 
         then 3 * (sum - goal)
         else goal - sum
-    in  if all_same_color(held_cards)
+    in if all_same_color(held_cards)
         then total_score / 2
         else total_score
         
-let officiate(cs, ml, goal) =
-    let rec make_move(held_cards, moves) =
-        match moves with
+let officiate(cards, moves, goal) =
+    let rec make_move(held_cards, cs, ml) =
+        match ml with
             | [] -> score(held_cards, goal)
-            | mv::moves ->
+            | mv::ml' ->
                 match mv with
                     | Discard c ->
-                        make_move(remove_card(held_cards, c, IllegalMove), moves)
+                        make_move(remove_card(held_cards, c, IllegalMove), cs , ml')
                     | Draw ->
                         match cs with 
                             | [] -> score(held_cards, goal)
-                            | c::cs -> 
+                            | c::cs' -> 
                                 if sum_cards(c::held_cards) > goal
                                 then score(c::held_cards, goal)
-                                else make_move(c::held_cards, moves)
-    in make_move([], ml)
+                                else make_move(c::held_cards, cs', ml')
+    in make_move([],cards, moves)
         

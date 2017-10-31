@@ -94,5 +94,9 @@ let tests () =
                             ignore (officiate([(Clubs, Jack); (Spades, Num(8))], [Draw; Discard(Hearts, Jack)],42));
                             false
                          with IllegalMove -> true | _ -> false) 
-                         
+    let move_list1 = [Draw; Draw; Draw; Draw; Draw; Draw]
+    let card_list1 = [(Clubs, Jack); (Spades, Num(7)); (Hearts, Ace); (Spades, King)]
+    let goal1 = 15
+    printfn "Test4: %b" (officiate (card_list1, move_list1, goal1) = 3)
+                    
 tests()
